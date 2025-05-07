@@ -1,0 +1,45 @@
+import bcrypt from 'bcryptjs';
+import jwt, { SignOptions } from 'jsonwebtoken';
+import { configVariables } from '../../config/envConfig';
+
+const jwt_secret = configVariables.jwtConfig.secret;
+
+if (!jwt_secret) {
+  throw new Error('JWT secret is not defined in environment configuration.');
+}
+
+interface JwtPayload {
+    id: string;
+    role: string;
+}
+
+//valid string formats jwt accepts for expiresIn
+type JwtExpiry = number | `${number}${'s' | 'm' | 'h' | 'd' | 'w' | 'y'}`;
+
+export const hashData = async (data: string, salt: number = 10): Promise<string> => {
+  return bcrypt.hash(data, salt);
+};
+
+export const verifyData = async (plainData: string, hashedData: string): Promise<boolean> => {
+  return bcrypt.compare(plainData, hashedData);
+};
+
+export const generateToken = async (
+  id: string,
+  role: string,
+  exp: JwtExpiry = '1h'
+): Promise<string> => {
+  const payload: JwtPayload = { id, role };
+  const options: SignOptions = {
+    expiresIn: exp
+  };
+  return jwt.sign(payload, jwt_secret, options);
+};
+
+export const verifyToken = async (token: string): Promise<JwtPayload> => {
+  return jwt.verify(token, jwt_secret) as JwtPayload;
+};
+
+export const generateRandomToken = async (): Promise<string> =>{
+  return crypto.randomUUID()
+}
