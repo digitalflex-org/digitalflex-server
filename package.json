@@ -19,6 +19,7 @@
     "ioredis": "^5.6.1",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
+    "lodash.omit": "^4.5.0",
     "mongoose": "^8.14.0",
     "winston": "^3.17.0"
   },
@@ -29,6 +30,7 @@
     "@eslint/markdown": "^6.4.0",
     "@types/express": "^5.0.1",
     "@types/jsonwebtoken": "^9.0.9",
+    "@types/lodash.omit": "^4.5.9",
     "@types/node": "^22.15.3",
     "eslint": "^9.26.0",
     "globals": "^16.0.0",
