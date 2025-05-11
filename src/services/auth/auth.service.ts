@@ -22,7 +22,7 @@ class AuthService {
       const { password, role } = data
       const hashPassword = await hashData(password);
       data.password = hashPassword
-      if (role.toLocaleLowerCase() === 'applicant') {
+      if (role === 'applicant') {
         user = await new TempUser(data).save()
         return user;
       }
@@ -74,6 +74,7 @@ class AuthService {
         case 'applicant':
           newUser = new Applicant(userData);
           newUser.activated = true;
+          newUser.lastActiveAt = new Date(Date.now());
           console.log('The user Data:', newUser);
           break;
         case 'user':
@@ -101,39 +102,53 @@ class AuthService {
 
 
   //log a user in
+  //log a user in
   static async login(data: Partial<userInterface>): Promise<Partial<userInterface>> {
     try {
-      const user = await User.findOne({ email: data.email }).select('+password') || await Applicant.findOne({ email: data.email }).select('+password');
+      const user = await User.findOne({ email: data.email }).select('+password')
+        || await Applicant.findOne({ email: data.email }).select('+password');
+
       if (!user) {
         throw new NotFoundError('Verify your data and try again or sign up, also ensure your account has been activated');
       }
 
-      const verifyPassword = await verifyData(data.password as string, user.password as string)
+      const verifyPassword = await verifyData(data.password as string, user.password as string);
       if (!verifyPassword) {
-        throw new BadRequest('invalid data, kindly confirm provided details')
+        throw new BadRequest('invalid data, kindly confirm provided details');
       }
+
+      user.lastActiveAt = new Date(Date.now()).toLocaleString();
+      await user.save();
+
       const { password, ...detailsWithOutPassword } = user.toObject();
-      if (!detailsWithOutPassword.name) {
-        throw new BadRequest('User data is incomplete. Name is missing.');
-      }
       return detailsWithOutPassword as Partial<userInterface>;
     } catch (error) {
-      logger.error('Error logging in user', error instanceof Error ? error.message : 'Unknown error');
       if (error instanceof BaseError) {
-        throw error;
+        logger.error('Error logging in user', error.message);
+      } else {
+        logger.error('Unknown Error', error);
       }
-      throw new BadRequest('Login failed. Please try again.');
+      throw error;
     }
   }
 
   //forgot password
   static async forgotPassword(email: string) {
-    const user = await User.findOne({ email: email }) || await Applicant.findOne({email:email});
-    if (!user) {
-      throw new BaseError('Not a registred user');
+    try {
+      const user = await User.findOne({ email: email }) || await Applicant.findOne({ email: email });
+      if (!user) {
+        throw new BaseError('Not a registred user');
+      }
+      //if the user exist send reset link or otp to user or applicant email
+      // add limit to the time reset link or otp can e requested
+    } catch (error) {
+      if (error instanceof BaseError) {
+        logger.error('Error generating password reset options', error.message);
+      } else {
+        logger.error('Unknown Error', error);
+      }
+      throw error;
     }
-    //if the user exist send reset link or otp to user or applicant email
-    // add limit to the time reset link or otp can e requested
   }
   //reset password
   // 
