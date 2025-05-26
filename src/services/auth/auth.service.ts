@@ -3,10 +3,11 @@ import Applicant from '../../models/applicant.model';
 import TempUser from '../../models/tempUser.model';
 import User, { userInterface } from '../../models/user.model';
 import { generateRandomToken, hashData, verifyData } from '../../utils/auth/auth.utils';
-import { BadRequest, NotFoundError, ResourceConflicts } from '../../utils/errors';
+import { BadRequest, NotFoundError, ResourceConflicts, UnauthorizedError } from '../../utils/errors';
 import { BaseError } from '../../utils/errors/BaseError';
 import logger from '../../utils/logger';
 import omit from 'lodash.omit';
+import { Model } from 'mongoose';
 
 
 class AuthService {
@@ -99,9 +100,17 @@ class AuthService {
       throw new BadRequest('Activation failed. Please try again.');
     }
   }
-
-
-  //log a user in
+  static async checkApplicantStatus(id: string, model: Model<any>): Promise<boolean> {
+    try {
+      const user = await model.findOne({ _id: id }).exec();
+      return user.status === 'deactivated';
+    } catch (error) {
+      if (error instanceof BaseError) {
+        console.log('Error getting user status', error.message);
+      }
+      throw error;
+    }
+  }
   //log a user in
   static async login(data: Partial<userInterface>): Promise<Partial<userInterface>> {
     try {
@@ -116,7 +125,16 @@ class AuthService {
       if (!verifyPassword) {
         throw new BadRequest('invalid data, kindly confirm provided details');
       }
-
+      if (user.role === 'applicant') {
+        const isDeactivated = await this.checkApplicantStatus(user._id, Applicant);
+        console.log(isDeactivated);
+        if (!isDeactivated) {
+          user.lastActiveAt = new Date(Date.now()).toLocaleString();
+          // console.log(user.lastActiveAt);
+        } else {
+          throw new UnauthorizedError('Kindly reach out to Admin or the HR as your account has been deactivated due to hours of inactivity.');
+        }
+      }
       user.lastActiveAt = new Date(Date.now()).toLocaleString();
       await user.save();
 
@@ -151,7 +169,6 @@ class AuthService {
     }
   }
   //reset password
-  // 
 
 }
 
