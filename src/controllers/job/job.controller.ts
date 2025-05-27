@@ -18,35 +18,43 @@ class JobController {
             }
 
             res.status(200).json({ success: true, jobs })
+            return;
         } catch (error) {
             next(error)
         }
     }
 
-    static async getJob(req: Request, res: Response, next: NextFunction) {
+    static async getJob(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             let job;
             const { identifier } = req.params;
             if (!identifier) {
                 throw new BadRequest('verify selected job exists')
             }
+            // console.log(identifier);
             job = isValidObjectId(identifier) ? await JobService.getJobById(identifier) : await JobService.getJobBySlug(identifier)
             if (!job) throw new NotFoundError('Job Not Found!');
             res.status(200).json({ 'success': true, job })
+            return;
         } catch (error) {
             next(error)
         }
     }
 
-    static async addJob(req: Request, res: Response, next: NextFunction) {
+    static async addJob(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { error } = createJobValidation(req.body);
             if (error) {
                 throw new BadRequest(`"missing required parameters!:"
                 ${error.message}`)
             }
-            const job = await JobService.createJob(req.body);
-            res.status(200).json({ success: true, job })
+            const userObj = Object(req.user);
+            const postedBy = userObj.id;
+            // console.log(postedBy)
+            const payload = { postedBy, ...req.body }
+            const job = await JobService.createJob(payload);
+            res.status(201).json({ success: true, job })
+            return;
         } catch (error) {
             next(error)
 
@@ -56,9 +64,15 @@ class JobController {
     static async updateJob(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { id } = req.params;
-            const { title, ...data } = req.body;
-            
-            const updatedJob = await JobService.updateJobDetails(id, data);
+            const { deadline, ...data } = req.body;
+            const user = Object(req.user);
+            const updatedBy = user.id;
+            const payload = {
+                data,
+                updatedBy
+            }
+
+            const updatedJob = await JobService.updateJobDetails(id, payload);
             res.status(200).json({ success: true, message: 'Job details updated sucessfully!', job: updatedJob });
         } catch (error) {
             next(error);
@@ -74,7 +88,7 @@ class JobController {
             }
             await JobService.deleteJobs(ids as string[])
             res.status(204).send();
-            return;
+            // return;
         } catch (error) {
             next(error);
         }
