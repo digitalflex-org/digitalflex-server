@@ -12,6 +12,7 @@ export const configVariables = {
   redisConfig: {
     host: undefined,
     port: 6379,
+    url: process.env.REDISURL
     // password:
 
   },
