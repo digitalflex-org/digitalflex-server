@@ -1,6 +1,8 @@
 import { required, string } from 'joi';
 import mongoose, { Document, Schema, Model, mongo } from 'mongoose';
 import { generateJobSlug } from '../services/job/job.service';
+import User from './user.model';
+
 
 export interface jobInterface extends Document {
   title: string,
@@ -17,7 +19,9 @@ export interface jobInterface extends Document {
   salary: number,
   deadline: Date,
   link: string,
-  slug: string
+  slug: string,
+  postedBy: mongoose.Schema.Types.ObjectId,
+  updatedBy: mongoose.Schema.Types.ObjectId
 }
 
 
@@ -39,12 +43,16 @@ const jobSchema: Schema = new Schema<jobInterface>({
   link: { type: String },
   salary: { type: Number },
   deadline: { type: Date },
-  slug: { type: String }
+  slug: { type: String },
+  postedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  updatedBy: { type: Schema.Types.ObjectId, ref: 'User' }
 })
 jobSchema.pre('save', async function (next) {
   if (!this.slug) {
     this.slug = generateJobSlug(this.title as string);
   }
+  await this.populate('postedBy')
+  await this.populate('updatedBy')
   next();
 });
 const Job: Model<jobInterface> = mongoose.model<jobInterface>('Job', jobSchema);

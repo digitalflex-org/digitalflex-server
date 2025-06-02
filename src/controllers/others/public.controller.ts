@@ -16,6 +16,17 @@ class PublicController{
             next(error);
         }
     }
+
+    static async getUserStats(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userStats = await PublicService.getUserStats();
+            console.log('users stats:', userStats);
+            res.status(200).json({ success: true, message: 'stats fetched', data: userStats });
+            return;
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default PublicController;

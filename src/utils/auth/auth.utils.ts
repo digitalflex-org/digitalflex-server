@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { configVariables } from '../../config/envConfig';
+import { v4 as uuidv4 } from 'uuid'
+
 
 const jwt_secret = configVariables.jwtConfig.secret;
 
@@ -9,8 +11,9 @@ if (!jwt_secret) {
 }
 
 interface JwtPayload {
-    id: string;
-    role: string;
+  id: string;
+  role: string;
+  exp?: number;
 }
 
 //valid string formats jwt accepts for expiresIn
@@ -40,6 +43,19 @@ export const verifyToken = async (token: string): Promise<JwtPayload> => {
   return jwt.verify(token, jwt_secret) as JwtPayload;
 };
 
-export const generateRandomToken = async (): Promise<string> =>{
+export const generateRandomToken = async (): Promise<string> => {
   return crypto.randomUUID()
+}
+
+export const generateSessionId = async (exp: number) => {
+  const generatedId = uuidv4()
+  // console.log('generated sessionId:', generatedId);
+  return { generatedId, exp };
+}
+export const decodeToken = async (token: string): Promise<number | string> => {
+  const decoded = jwt.decode(token);
+  if (decoded && typeof decoded === 'object' && 'exp' in decoded) {
+    return (decoded as { exp: number }).exp;
+  }
+  return 0;
 }

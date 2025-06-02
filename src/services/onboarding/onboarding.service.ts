@@ -1,12 +1,14 @@
+import mongoose, { mongo, Types } from 'mongoose';
+import Applicant, { ApplicantInterface} from '../../models/applicant.model';
 import onboardingMaterials, { onboardingInterface } from '../../models/onboarding.model';
-import { NotFoundError, ResourceConflicts } from '../../utils/errors';
+import { BadRequest, NotFoundError, ResourceConflicts } from '../../utils/errors';
 import { BaseError } from '../../utils/errors/BaseError';
 import logger from '../../utils/logger';
 
 
 class onboardingService {
   static async uploadMaterials(data: Partial<onboardingInterface>) {
-    const { title, videoUrl, taskDescription, documentUrl } = data;
+    const { title, videoUrl, taskDescription, documentUrl, category, duration } = data;
     try {
       const existingMaterial = await onboardingMaterials.findOne({ title }).exec();
       if (existingMaterial) {
@@ -15,8 +17,10 @@ class onboardingService {
       const material = await new onboardingMaterials({
         title: title,
         taskDescription: taskDescription,
-        videoUrl: videoUrl || '',
-        documentUrl: documentUrl || ''
+        videoUrl: videoUrl,
+        documentUrl: documentUrl,
+        category: category,
+        duration: duration
       }).save()
       return material
     } catch (error) {
@@ -58,9 +62,10 @@ class onboardingService {
         taskDescription: updatedData.taskDescription || material.taskDescription,
         documentUrl: updatedData.documentUrl || material.documentUrl,
         videoUrl: updatedData.videoUrl || material.videoUrl,
-        category: updatedData.category || material.category
+        category: updatedData.category || material.category,
+        duration: updatedData.duration || material.duration
       }
-      const updatedMaterial = await onboardingMaterials.updateOne({ _id: id },{$set: payload })
+      const updatedMaterial = await onboardingMaterials.updateOne({ _id: id }, { $set: payload })
       return updatedMaterial;
     } catch (error) {
       if (error instanceof BaseError) {
@@ -71,5 +76,101 @@ class onboardingService {
       throw error;
     }
   }
+
+  static async removeOnboardingMaterials(ids: string[]) {
+    try {
+      await onboardingMaterials.deleteMany(ids)
+    } catch (error) {
+      if (error instanceof BaseError) {
+        logger.error('Error removing onboarding materials', error.message);
+
+      } else {
+        logger.error('Unknown error', error);
+      }
+      throw error;
+    }
+
+  }
+
+  static async provideRandomOnboardingQuest(category: string) {
+    try {
+      const categoryMaterials = await onboardingMaterials.find({ category, isCompleted: false });
+      if (!categoryMaterials) {
+        throw new NotFoundError('No Materials for this section yet, kindly reach out to the system adminstrator for futher assistance');
+      }
+      return categoryMaterials;
+    } catch (error) {
+      if (error instanceof BaseError) {
+        logger.error('Error fetching section Materials', error.message)
+      } else {
+        logger.error('Unknow Error', error);
+      }
+      throw error;
+    }
+
+  }
+
+  static async applicantCompletedMaterial(applicantId: string, materialId: string) {
+    try {
+      const material = await onboardingMaterials.findById(materialId);
+      if (!material) {
+        throw new NotFoundError('Selected material not found');
+      }
+
+      const applicant = await Applicant.findById(applicantId);
+      if (!applicant) {
+        throw new NotFoundError('Selected applicant not found');
+      }
+
+      const existingProgress = applicant.progress.find(item => item.materialId.toString() === materialId);
+      if (existingProgress?.isCompleted) {
+        throw new BadRequest('Material already marked as completed');
+      }
+
+      // Update progress
+      const updatedProgress = {
+        materialId: material._id as Types.ObjectId,
+        category: material.category,
+        isCompleted: true,
+        completionDate: new Date(),
+      };
+
+      applicant.progress = [
+        ...applicant.progress.filter(item => item.materialId.toString() !== materialId),
+        updatedProgress as ApplicantInterface["progress"][0], 
+      ];
+      
+
+      // Calculate score
+      const categoryProgress = applicant.progress.filter(item => item.category === material.category);
+      const completedCount = categoryProgress.filter(item => item.isCompleted).length;
+      const totalCount = categoryProgress.length;
+      const score = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+      const categoryScoreMap: Record<string, keyof ApplicantInterface["screening"]> = {
+        "tech-readiness": "techReadiness",
+        "mindset": "mindsetScore",
+        "logic": "logicScore",
+      };
+
+      const scoreKey = categoryScoreMap[material.category];
+
+      if (scoreKey) {
+        applicant.screening[scoreKey] = Math.round(score);
+      }
+
+
+      await applicant.save();
+
+      return applicant.progress;
+
+    } catch (error) {
+      logger.error('Error completing onboarding material', error);
+      throw error;
+    }
+  }
+  
+
+
 }
 export default onboardingService;

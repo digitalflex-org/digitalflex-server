@@ -3,6 +3,7 @@ import { redisClient } from '../../config/redisConfig';
 import logger from '../../utils/logger';
 import { InternalServerError, NotFoundError } from '../../utils/errors';
 import { BaseError } from '../../utils/errors/BaseError';
+import { any } from 'joi';
 
 class UserService {
   static async getUsers(): Promise<userInterface[]> {
@@ -55,6 +56,21 @@ class UserService {
       throw new InternalServerError('Failed to fetch user');
     }
   }
+
+  static async updateUSerData(data: any) {
+    const {id} = data
+    const user = await User.findById({ _id: id });
+    if (!user) {
+      throw new NotFoundError('User Not found');
+    }
+    const payload = {
+      name: data.name || user.name,
+      
+    }
+    const updatedData = await User.updateOne({id:id},{$set:{}})
+
+  }
+  
 }
 
 

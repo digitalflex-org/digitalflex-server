@@ -18,3 +18,17 @@ export const signInValidation = (data: userInterface) => {
   });
   return schema.validate(data);
 };
+
+export const forgotPasswordValidator = (data: { email: string }) => {
+  const schema = Joi.object({
+    email: Joi.string().email().required()
+  });
+  return schema.validate(data)
+}
+export const resetPasswordValidator = (data: any) => {
+  const schema = Joi.object({
+    resetToken: Joi.string().required(),
+    newPassword:Joi.string().min(8).required()
+  })
+  return schema.validate(data);
+}

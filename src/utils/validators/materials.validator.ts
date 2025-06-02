@@ -5,7 +5,9 @@ export const addMaterialValidator = (data: any) => {
         title: Joi.string().required(),
         videoUrl: Joi.string().optional(),
         taskDescription: Joi.string().required(),
-        documentUrl: Joi.string().optional()
+        documentUrl: Joi.string().optional(),
+        isVideoCompleted: Joi.boolean().optional(),
+        
 
     })
     return schema.validate(data, { abortEarly: false });

@@ -5,7 +5,7 @@ import { BaseError } from '../../utils/errors/BaseError';
 import logger from '../../utils/logger';
 
 
-export const generateJobSlug = async (data: string): Promise<string> =>{
+export const generateJobSlug = async (data: string): Promise<string> => {
   let newstr = data.toLowerCase().split(' ').join('-');
   return newstr
 }
@@ -43,7 +43,7 @@ class JobService {
       const cachedJobs = await redisClient.get('jobs');
       if (cachedJobs) {
         const parsedJobs: jobInterface[] = JSON.parse(cachedJobs)
-        const job = parsedJobs.find(item => item._id === id)
+        const job = parsedJobs.find(item => item._id as string === id)
         if (job) {
           return job
         }
@@ -87,7 +87,7 @@ class JobService {
   //add job
   static async createJob(data: jobInterface): Promise<jobInterface> {
     try {
-      let { title, description, location, salary, deadline, slug } = data;
+      let { title, description, location, salary, deadline, slug, postedBy } = data;
       const exisitingJob = await Job.findOne({ title, location });
       if (exisitingJob) {
         throw new ResourceConflicts('similar job details already exist!');
@@ -99,7 +99,8 @@ class JobService {
         location: location,
         salary: salary,
         deadline: deadline,
-        slug: slug
+        slug: slug,
+        postedBy
 
       })
       await job.save();
