@@ -1,7 +1,7 @@
 import mongoose, { mongo, Types } from 'mongoose';
-import Applicant, { ApplicantInterface} from '../../models/applicant.model';
+import Applicant, { ApplicantInterface } from '../../models/applicant.model';
 import onboardingMaterials, { onboardingInterface } from '../../models/onboarding.model';
-import { BadRequest, NotFoundError, ResourceConflicts } from '../../utils/errors';
+import { BadRequest, NotFoundError, ResourceConflicts, UnauthorizedError } from '../../utils/errors';
 import { BaseError } from '../../utils/errors/BaseError';
 import logger from '../../utils/logger';
 
@@ -92,13 +92,29 @@ class onboardingService {
 
   }
 
-  static async provideRandomOnboardingQuest(category: string) {
+  static async provideRandomOnboardingQuest(category: string, userId: string) {
     try {
-      const categoryMaterials = await onboardingMaterials.find({ category, isCompleted: false });
-      if (!categoryMaterials) {
+      const categoryMaterials = await onboardingMaterials.find({ category });
+      if (!categoryMaterials || categoryMaterials.length === 0) {
         throw new NotFoundError('No Materials for this section yet, kindly reach out to the system adminstrator for futher assistance');
       }
-      return categoryMaterials;
+      const applicant = await Applicant.findById(userId).select('progress');
+      if (!applicant) {
+        throw new BadRequest('Not an active applicant!');
+      }
+      const progressMap = new Map(
+        applicant.progress.map((entry) => [entry.materialId.toString(), entry.isCompleted])
+      );
+
+      const personalizedMaterials = categoryMaterials.map((material: onboardingInterface) => {
+        const completed = progressMap.get((material._id as Types.ObjectId).toString()) || false;
+        return {
+          ...material.toObject(),
+          isCompleted: completed
+        };
+      });
+
+      return personalizedMaterials;
     } catch (error) {
       if (error instanceof BaseError) {
         logger.error('Error fetching section Materials', error.message)
@@ -137,9 +153,9 @@ class onboardingService {
 
       applicant.progress = [
         ...applicant.progress.filter(item => item.materialId.toString() !== materialId),
-        updatedProgress as ApplicantInterface["progress"][0], 
+        updatedProgress as ApplicantInterface["progress"][0],
       ];
-      
+
 
       // Calculate score
       const categoryProgress = applicant.progress.filter(item => item.category === material.category);
@@ -169,7 +185,7 @@ class onboardingService {
       throw error;
     }
   }
-  
+
 
 
 }

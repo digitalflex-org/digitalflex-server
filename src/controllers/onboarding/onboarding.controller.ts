@@ -62,11 +62,17 @@ class onboardingController {
 
     static async getRandomQuest(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
+            const user = req.user as { id: string };
+            if (!user || !user.id) {
+                return next(new BadRequest('User is not authenticated or missing user ID'));
+            }
+            const userId = user.id;
+            // console.log('user id:', userId)
             const { category } = req.query;
             if (!category) {
                 return next(new BadRequest('Category parameter is required'));
             }
-            const categoryBoardingMaterials = await onboardingService.provideRandomOnboardingQuest(category as string);
+            const categoryBoardingMaterials = await onboardingService.provideRandomOnboardingQuest(category as string, userId as string);
             res.status(200).json({ success: true, categoryBoardingMaterials });
             return;
         } catch (error) {
