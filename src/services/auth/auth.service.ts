@@ -44,9 +44,9 @@ class AuthService {
   static async getUserFromToken(token: string) {
     try {
       const decoded = await verifyToken(token) as { id: string; role: string };
-      const user = await User.findById(decoded.id).select('id role email') || await Applicant.findById(decoded.id).select('id role email');
+      const user = await User.findById(decoded.id).select('id role email preferred_name') || await Applicant.findById(decoded.id).select('id role email preferred_name');
       return user;
-     } catch (error) {
+    } catch (error) {
       if (error instanceof BaseError) {
         logger.error('Error getting user from token', error.message);
       } else {
@@ -143,7 +143,7 @@ class AuthService {
       }
       if (user.role === 'applicant') {
         const isDeactivated = await this.checkApplicantStatus(user._id, Applicant);
-        console.log(isDeactivated);
+        // console.log(isDeactivated);
         if (!isDeactivated) {
           user.lastActiveAt = new Date(Date.now()).toLocaleString();
           // console.log(user.lastActiveAt);
@@ -212,7 +212,7 @@ class AuthService {
       if (!user) {
         throw new NotFoundError('User not found. Please verify your email and try again.');
       }
-      const userId:any = user._id;
+      const userId: any = user._id;
       const resetToken = await this.generateActivationLink(userId);
       await redisClient.set(`resetToken_${resetToken}`, userId.toString(), 'EX', 3600);
       const resetLink = `${req.protocol}://${req.get('host')}/api/auth/reset-password/${resetToken}`;
@@ -265,6 +265,29 @@ class AuthService {
 
 
 
+  static async logOut(userId: string) {
+    try {
+      //confirm the user data
+      const activeUser = await redisClient.get(`activeUsers:${userId}`);
+      //if not found assume it already expired
+      if (!activeUser) return;
+      const user = await User.findById(userId) || await Applicant.findById(userId);
+      if (user) {
+        user.lastActiveAt = new Date(Date.now());
+        await user.save();
+      }
+      //remove from active list on redis
+      await redisClient.del(`activeUsers:${userId}`);
+      // clear cookies on the controller end.
+    } catch (error) {
+      if (error instanceof BaseError) {
+        logger.error('Error Logging user out', error.message);
+      } else {
+        logger.error('Unknown Error', error);
+      }
+      throw error;
+    }
+  }
 }
 
 export default AuthService
