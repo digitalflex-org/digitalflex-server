@@ -15,10 +15,9 @@ class AuthController {
       let activationLink;
       const { error } = signUpValidation(req.body);
       const { role } = req.query;
-      console.log('role from query:', role);
+      // console.log('role from query:', role);
       if (error) {
         throw new BadRequest(`${error.details[0].message}`);
-        return;
       }
       if (role === 'admin') {
         logger.error(`${req.ip} tried creating an admin!`);
@@ -31,7 +30,7 @@ class AuthController {
       if (user.role === 'applicant') {
         const activationToken = await AuthService.generateActivationLink(user._id as ObjectId);
         activationLink = `${req.protocol}://${req.get('host')}/api/auth/activate/${activationToken}`;
-        // await Mailer.sendActivationMessage(user.email, `Applicant Account Activation`, activationLink);
+        await Mailer.sendActivationMessage(user.email, `Applicant Account Activation`, activationLink);
       }
       console.log(user)
       res.status(201).json({ success: true, data: user, activationLink })
@@ -77,15 +76,15 @@ class AuthController {
       res.cookie('auth_token', token, {
         httpOnly: true,
         // secure: process.env.NODE_ENV === 'production',
-        secure: false,
-        sameSite: 'lax',
+        secure: true,
+        sameSite: 'none',
         maxAge: 1000 * 60 * 60,
       });
       res.cookie('sessionId', sessionId.generatedId, {
         httpOnly: true,
         // secure: process.env.NODE_ENV === 'production',
-        secure: false,
-        sameSite: 'lax',
+        secure: true,
+        sameSite: 'none',
         maxAge: ((tokenExp as number) * 1000) - Date.now(),
       });
       const userData = { preferred_name, name, role, idStr };
@@ -114,7 +113,8 @@ class AuthController {
         logger.error(`Error at forgot password: ${error.details[0].message}`);
         throw new BadRequest(`Error at forgot password: ${error.details[0].message}`)
       }
-      await AuthService.forgotPassword(req.body, req);
+      const { email } = req.body;
+      await AuthService.forgotPassword(email, req);
       res.status(200).json({ success: true, message: 'Reset link sent to your mail' });
       return;
     } catch (error) {
@@ -124,12 +124,15 @@ class AuthController {
   }
   static async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { error } = resetPasswordValidator(req.body);
+      const { resetToken } = req.params;
+      const { newPassword } = req.body;
+
+      const { error } = resetPasswordValidator({ resetToken, newPassword });
       if (error) {
-        throw new BadRequest(`Error at reset password: ${error.details[0].message}`)
-        return;
+        throw new BadRequest(`Error at reset password: ${error.details[0].message}`);
       }
-      await AuthService.resetPassword(req.body);
+      const payload = { resetToken, newPassword }
+      await AuthService.resetPassword(payload);
       res.status(200).json({ success: true, message: 'Password reset successfully' });
       return;
 
@@ -157,12 +160,12 @@ class AuthController {
   }
 
   static async signOut(req: Request, res: Response, next: NextFunction): Promise<void> {
-    console.log('cookies:', req.cookies);
+    // console.log('cookies:', req.cookies);
     try {
       const { sessionId, auth_token } = req.cookies;
       if (!auth_token) { throw new BadRequest('missing required parameter') }
       const decodedToken = await decodeToken(auth_token);
-      console.log(decodedToken)
+      // console.log(decodedToken)
       const { id } = decodedToken;
       await AuthService.logOut(id);
       res.clearCookie('auth_token', { httpOnly: true, secure: true, sameSite: 'none', })

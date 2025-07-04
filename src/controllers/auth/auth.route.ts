@@ -15,7 +15,7 @@ router.post('/signout', AuthController.signOut)
 router.get('/activate/:activationToken', AuthController.activateAccount)
 router.post('/resend-activation', AuthController.resendActivationLink);
 router.post('/forgot-password', AuthController.forgotPassword);
-router.post('/reset-password', AuthController.resetPassword)
+router.post('/reset-password/:resetToken', AuthController.resetPassword)
 
 
 export default router
