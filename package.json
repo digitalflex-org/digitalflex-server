@@ -27,6 +27,7 @@
     "jsonwebtoken": "^9.0.2",
     "lodash.omit": "^4.5.0",
     "mongoose": "^8.15.1",
+    "node-cron": "^4.1.1",
     "nodemailer": "^7.0.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
