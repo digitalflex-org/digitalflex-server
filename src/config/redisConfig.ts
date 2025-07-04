@@ -2,7 +2,7 @@ import Redis from 'ioredis';
 import { configVariables } from './envConfig';
 import logger from '../utils/logger';
 
-const redisClient = new Redis();
+const redisClient = new Redis(configVariables.redisConfig.url ?? 'redis://localhost:6379');
 
 const connectRedis = (): Promise<void> => {
   return new Promise((resolve, reject) => {

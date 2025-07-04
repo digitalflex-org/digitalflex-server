@@ -3,16 +3,17 @@ import Job, { jobInterface } from '../../models/job.model';
 import { BadRequest, NotFoundError, ResourceConflicts } from '../../utils/errors';
 import { BaseError } from '../../utils/errors/BaseError';
 import logger from '../../utils/logger';
+import Paginate from '../../utils/others/pagination';
 
 
-export const generateJobSlug = async (data: string): Promise<string> =>{
-  let newstr = data.toLowerCase().split(' ').join('-');
+export const generateJobSlug = async (data: string): Promise<string> => {
+  const newstr = data.toLowerCase().split(' ').join('-');
   return newstr
 }
 
 class JobService {
   //get all jobs
-  static async getJobs(): Promise<jobInterface[]> {
+  static async getJobs(limit = 10, page = 1, filter: Record<string, any> = {}, sort: Record<string, 1 | -1> = { _id: -1 }): Promise<any> {
     try {
       //check from cache first
       const cachedJobs = await redisClient.get('jobs')
@@ -20,8 +21,7 @@ class JobService {
         return JSON.parse(cachedJobs)
       }
       // otherwise check the db
-      const jobs = await Job.find().exec();
-      const total = jobs.length;
+      const jobs = await Paginate('Job', limit, page, filter, sort);
       await redisClient.set('jobs', JSON.stringify(jobs), 'EX', 60)
 
       return jobs;
@@ -43,7 +43,7 @@ class JobService {
       const cachedJobs = await redisClient.get('jobs');
       if (cachedJobs) {
         const parsedJobs: jobInterface[] = JSON.parse(cachedJobs)
-        const job = parsedJobs.find(item => item._id === id)
+        const job = parsedJobs.find(item => item._id as string === id)
         if (job) {
           return job
         }
@@ -87,7 +87,7 @@ class JobService {
   //add job
   static async createJob(data: jobInterface): Promise<jobInterface> {
     try {
-      let { title, description, location, salary, deadline, slug } = data;
+      const { title, description, location, salary, deadline, slug, postedBy } = data;
       const exisitingJob = await Job.findOne({ title, location });
       if (exisitingJob) {
         throw new ResourceConflicts('similar job details already exist!');
@@ -99,7 +99,8 @@ class JobService {
         location: location,
         salary: salary,
         deadline: deadline,
-        slug: slug
+        slug: slug,
+        postedBy
 
       })
       await job.save();
@@ -128,6 +129,7 @@ class JobService {
       job.salary = data.salary || job.salary;
       job.deadline = data.deadline || job.deadline;
       job.slug = data.slug || job.slug;
+      job.postedBy = data.postedBy || job.postedBy;
       if (data.description) {
         job.description = {
           ...job.description,

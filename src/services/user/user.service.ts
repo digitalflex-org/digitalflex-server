@@ -3,9 +3,11 @@ import { redisClient } from '../../config/redisConfig';
 import logger from '../../utils/logger';
 import { InternalServerError, NotFoundError } from '../../utils/errors';
 import { BaseError } from '../../utils/errors/BaseError';
+import { any } from 'joi';
 
 class UserService {
   static async getUsers(): Promise<userInterface[]> {
+
     try {
       // console.log('checking cache first....')
       const cachedData = await redisClient.get('users')
@@ -15,7 +17,7 @@ class UserService {
       }
 
       // console.log('checking db now.......')
-      const users = await User.find().exec();
+      const users = await User.find().sort({ _id: -1 }).exec();
       await redisClient.set('users', JSON.stringify(users), 'EX', 60)
       logger.info('from db and cached')
       return users;
@@ -55,6 +57,21 @@ class UserService {
       throw new InternalServerError('Failed to fetch user');
     }
   }
+
+  static async updateUSerData(data: any) {
+    const { id } = data
+    const user = await User.findById({ _id: id });
+    if (!user) {
+      throw new NotFoundError('User Not found');
+    }
+    const payload = {
+      name: data.name || user.name,
+
+    }
+    const updatedData = await User.updateOne({ id: id }, { $set: {} })
+
+  }
+
 }
 
 
