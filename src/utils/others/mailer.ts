@@ -4,7 +4,6 @@ import nodemailer from 'nodemailer';
 class Mailer {
   private transporter: nodemailer.Transporter;
   constructor() {
-    //to use SMTP
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
