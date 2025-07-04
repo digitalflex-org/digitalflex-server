@@ -52,10 +52,11 @@ export const generateSessionId = async (exp: number) => {
   // console.log('generated sessionId:', generatedId);
   return { generatedId, exp };
 }
-export const decodeToken = async (token: string): Promise<number | string> => {
+export const decodeToken = async (token: string): Promise<any> => {
   const decoded = jwt.decode(token);
-  if (decoded && typeof decoded === 'object' && 'exp' in decoded) {
-    return (decoded as { exp: number }).exp;
+  if (decoded && typeof decoded === 'object') {
+    // console.log('token dat:', decoded);
+    return decoded;
   }
-  return 0;
-}
+  return null;
+};
