@@ -3,8 +3,9 @@ import { configVariables } from './envConfig';
 import logger from '../utils/logger';
 import User from '../models/user.model';
 import { hashData } from '../utils/auth/auth.utils';
-const dbPort = configVariables.dbConfig.dbUrl
-const dbName = configVariables.dbConfig.dbName
+const { dbUrl, db2Url, dbName, db2Name } = configVariables.dbConfig
+
+
 
 const seedAdmin = async () => {
   try {
@@ -34,25 +35,37 @@ const seedAdmin = async () => {
     logger.error('Error creating admin user', error);
   }
 };
+let blogDb: mongoose.Connection | null = null;
 
 const connectDb = async () => {
   try {
-    await mongoose.connect(`${dbPort}/${dbName}`)
-    logger.info('✅ DB Connected');
+    await mongoose.connect(`${dbUrl}/${dbName}`);
+    logger.info('✅ Main DB Connected');
+
     const existingAdmin = await User.findOne({ role: 'admin' });
     if (!existingAdmin) {
-      await seedAdmin()
+      await seedAdmin();
     }
+
+    blogDb = mongoose.createConnection(`${db2Url}/${db2Name}`);
+    blogDb.on('connected', () => {
+      logger.info('✅ Blog DB Connected');
+    });
+    blogDb.on('error', (err) => {
+      logger.error('❌ Blog DB connection error:', err);
+    });
 
   } catch (error) {
-    if (error instanceof Error) {
-      logger.error('⚠️ Error connecting to the Database', error.message);
-    } else {
-      logger.error('⚠️ Unknown error', error);
-    }
+    logger.error('⚠️ DB Connection Error:', error);
     process.exit(1);
   }
-}
+};
 
+const getBlogDb = (): mongoose.Connection => {
+  if (!blogDb) {
+    throw new Error('Blog DB is not yet connected.');
+  }
+  return blogDb;
+};
 
-export default connectDb;
+export { connectDb, getBlogDb };
