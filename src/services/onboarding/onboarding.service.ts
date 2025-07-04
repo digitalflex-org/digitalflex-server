@@ -153,7 +153,7 @@ class onboardingService {
 
       applicant.progress = [
         ...applicant.progress.filter(item => item.materialId.toString() !== materialId),
-        updatedProgress as ApplicantInterface["progress"][0],
+        updatedProgress as ApplicantInterface['progress'][0],
       ];
 
 
@@ -163,10 +163,10 @@ class onboardingService {
       const totalCount = categoryProgress.length;
       const score = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
-      const categoryScoreMap: Record<string, keyof ApplicantInterface["screening"]> = {
-        "tech-readiness": "techReadiness",
-        "mindset": "mindsetScore",
-        "logic": "logicScore",
+      const categoryScoreMap: Record<string, keyof ApplicantInterface['screening']> = {
+        'tech-readiness': 'techReadiness',
+        'mindset': 'mindsetScore',
+        'logic': 'logicScore',
       };
 
       const scoreKey = categoryScoreMap[material.category];
