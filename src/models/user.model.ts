@@ -11,11 +11,11 @@ export interface userInterface extends Document {
   lastActiveAt?: Date
 }
 export const rolesHierarchy = {
-  admin: ["create", "update", "delete", "view"],
-  editor: ["create", "update", "view"],
-  viewer: ["view"],
+  admin: ['create', 'update', 'delete', 'view'],
+  editor: ['create', 'update', 'view'],
+  viewer: ['view'],
   user: ['view'],
-  applicant: ["view"]
+  applicant: ['view']
 };
 const userSchema: Schema = new Schema<userInterface>({
   name: { type: String, required: true, trim: true },
@@ -24,7 +24,7 @@ const userSchema: Schema = new Schema<userInterface>({
   preferred_name: { type: String, min: 4 },
   resetToken: { type: String, default: null },
   // role: { type: String, enum: ['admin','editor', 'user', 'applicant'], default: 'user' },
-  role: { type: String, enum: Object.keys(rolesHierarchy), default: 'viewer' },
+  role: { type: String, enum: Object.keys(rolesHierarchy), default: 'user' },
   lastActiveAt: { type: Date, default: Date.now }
 })
 // userSchema.index({ email: 1 }, { unique: true });

@@ -6,8 +6,8 @@ export interface tokenInterface extends Document {
 }
 
 const tokenSchema: Schema = new Schema<tokenInterface>({
-    email: { type: String },
-    resetToken: { type: String }
+  email: { type: String },
+  resetToken: { type: String }
 })
 
 const Token: Model<tokenInterface> = mongoose.model<tokenInterface>('Token', tokenSchema);
