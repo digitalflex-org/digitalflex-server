@@ -6,6 +6,7 @@ import applicantRoute from '../controllers/applicants/applicant.route'
 import onboardingRoute from '../controllers/onboarding/onboarding.route'
 import crmRoute from '../controllers/crm/crm.route'
 import publicRoute from '../controllers/others/public.route'
+import blogRoute from '../controllers/blog/blog.route'
 const router = express.Router()
 
 router.use('/users', userRoute);
@@ -15,6 +16,7 @@ router.use('/applicants', applicantRoute);
 router.use('/onboarding', onboardingRoute);
 router.use('/crm', crmRoute);
 router.use('/public', publicRoute);
+router.use('/blog', blogRoute);
 
 
 export default router;
