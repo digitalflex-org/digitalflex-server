@@ -8,7 +8,6 @@ class PublicController {
       const activeUsers = await PublicService.getActiveUsers();
       if (!activeUsers || activeUsers.length === 0) {
         throw new NotFoundError('No active users at the moment');
-        return;
       }
       res.status(200).json({ success: true, message: 'Active users fetched successfully', data: activeUsers });
       return;
@@ -20,7 +19,7 @@ class PublicController {
   static async getUserStats(req: Request, res: Response, next: NextFunction) {
     try {
       const userStats = await PublicService.getUserStats();
-      console.log('users stats:', userStats);
+      // console.log('users stats:', userStats);
       res.status(200).json({ success: true, message: 'stats fetched', data: userStats });
       return;
     } catch (error) {

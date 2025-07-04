@@ -36,7 +36,6 @@ class onboardingController {
       const { id } = req.params;
       if (!id) {
         throw new BadRequest('Missing required parameter')
-        return;
       }
       const { ...data } = req.body;
       const updatedMaterial = await onboardingService.updateMaterial(id, data);

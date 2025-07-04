@@ -22,7 +22,7 @@ class AuthController {
       if (role === 'admin') {
         logger.error(`${req.ip} tried creating an admin!`);
         throw new UnauthorizedError('you do not have the permission to perform this action, kindly contact the system administrator!');
-        return;
+
       }
       const payload = { ...req.body, role }
       const user = await AuthService.register(payload);
@@ -32,7 +32,7 @@ class AuthController {
         activationLink = `${req.protocol}://${req.get('host')}/api/auth/activate/${activationToken}`;
         await Mailer.sendActivationMessage(user.email, `Applicant Account Activation`, activationLink);
       }
-      console.log(user)
+      // console.log(user)
       res.status(201).json({ success: true, data: user, activationLink })
       return;
 
