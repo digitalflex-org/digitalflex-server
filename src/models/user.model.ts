@@ -23,11 +23,9 @@ const userSchema: Schema = new Schema<userInterface>({
   password: { type: String, min: 8, required: true, select: false },
   preferred_name: { type: String, min: 4 },
   resetToken: { type: String, default: null },
-  // role: { type: String, enum: ['admin','editor', 'user', 'applicant'], default: 'user' },
   role: { type: String, enum: Object.keys(rolesHierarchy), default: 'user' },
   lastActiveAt: { type: Date, default: Date.now }
 })
-// userSchema.index({ email: 1 }, { unique: true });
 
 const User: Model<userInterface> = mongoose.model<userInterface>('User', userSchema);
 export default User
