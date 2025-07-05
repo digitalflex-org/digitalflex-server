@@ -8,7 +8,7 @@ import logger from '../../utils/logger';
 import mongoose, { ObjectId } from 'mongoose';
 import { Types } from 'joi';
 import PublicService from '../../services/others/public.service';
-
+const frontendBaseUrl = process.env.FRONTEND_BASE_URL;
 class AuthController {
   static async signup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -29,7 +29,7 @@ class AuthController {
       // send activation link to mail if user is an applicant
       if (user.role === 'applicant') {
         const activationToken = await AuthService.generateActivationLink(user._id as ObjectId);
-        activationLink = `${req.protocol}://${req.get('host')}/api/auth/activate/${activationToken}`;
+        activationLink = `${frontendBaseUrl}/activate?token=${activationToken}`;;
         await Mailer.sendActivationMessage(user.email, `Applicant Account Activation`, activationLink);
       }
       // console.log(user)
@@ -44,7 +44,7 @@ class AuthController {
 
   static async activateAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { activationToken } = req.params;
+      const { activationToken } = req.body;
 
       const tokenController = await AuthService.activateAccount(activationToken);
       // console.log('tokenController', tokenController)

@@ -12,7 +12,7 @@ router.get('/me', AuthController.getCurrentUser);
 router.post('/signup', AuthController.signup)
 router.post('/signin', AuthController.signIn)
 router.post('/signout', AuthController.signOut)
-router.get('/activate/:activationToken', AuthController.activateAccount)
+router.get('/activate', AuthController.activateAccount)
 router.post('/resend-activation', AuthController.resendActivationLink);
 router.post('/forgot-password', AuthController.forgotPassword);
 router.post('/reset-password/:resetToken', AuthController.resetPassword)
