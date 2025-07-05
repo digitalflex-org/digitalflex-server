@@ -44,7 +44,7 @@ class AuthController {
 
   static async activateAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { activationToken } = req.params;
+      const { activationToken } = req.body;
 
       const tokenController = await AuthService.activateAccount(activationToken);
       // console.log('tokenController', tokenController)
