@@ -10,6 +10,7 @@ import logger from '../../utils/logger';
 import omit from 'lodash.omit';
 import mongoose, { Model } from 'mongoose';
 import Mailer from '../../utils/others/mailer';
+const frontendBaseUrl = process.env.FRONTEND_BASE_URL;
 
 
 class AuthService {
@@ -215,7 +216,7 @@ class AuthService {
       const userId: any = user._id;
       const resetToken = await this.generateActivationLink(userId);
       await redisClient.set(`resetToken_${resetToken}`, userId.toString(), 'EX', 3600);
-      const resetLink = `${req.protocol}://${req.get('host')}/api/auth/reset-password/${resetToken}`;
+      const resetLink = `${frontendBaseUrl}/reset-password/?token=${resetToken}`;
       //if the user exist send reset link or otp to user or applicant email
       await Mailer.sendResetLinkOrOtp(user.email, 'Reset your account password', resetLink);
       await redisClient.multi()
